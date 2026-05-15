@@ -33,25 +33,29 @@ namespace WinFormsApp1
 
         private void btnlogin_Click(object sender, EventArgs e)
         {
-            String username = txt_username.Text;
-            String password = txt_password.Text;
-            if (username == "0016968@st.huce.edu.vn" || password == "0016968")
+            string username = txt_username.Text.Trim();
+            string password = txt_password.Text.Trim();
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
-                MessageBox.Show("dang nhap thanh cong");
+                MessageBox.Show("Vui lòng nhập đầy đủ tài khoản và mật khẩu!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (username == "0016968@st.huce.edu.vn" && password == "0016968")
+            {
+                MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 AddDemoLayoutQLSV frmMain = new AddDemoLayoutQLSV();
-
-                // 2. Hiển thị Form mới
+                frmMain.FormClosed += (s, args) => Application.Exit();
                 frmMain.Show();
-
-                // 3. Ẩn Form đăng nhập hiện tại (this ở đây là Form Login)
                 this.Hide();
             }
             else
             {
-                MessageBox.Show("dang nhap that bai");
-                Application.Exit();
+               
+                MessageBox.Show("Tài khoản hoặc mật khẩu không chính xác!", "Lỗi đăng nhập", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                txt_password.Clear(); 
+                txt_password.Focus(); 
             }
-            //DoTienLoc
         }
     }
 }
