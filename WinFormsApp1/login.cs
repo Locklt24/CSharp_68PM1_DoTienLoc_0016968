@@ -5,12 +5,13 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using Quanlysinhvien;
 
 namespace WinFormsApp1
 {
-    public partial class Form1 : Form
+    public partial class login : Form
     {
-        public Form1()
+        public login()
         {
             InitializeComponent();
         }
@@ -37,10 +38,18 @@ namespace WinFormsApp1
             if (username == "0016968@st.huce.edu.vn" || password == "0016968")
             {
                 MessageBox.Show("dang nhap thanh cong");
+                AddDemoLayoutQLSV frmMain = new AddDemoLayoutQLSV();
+
+                // 2. Hiển thị Form mới
+                frmMain.Show();
+
+                // 3. Ẩn Form đăng nhập hiện tại (this ở đây là Form Login)
+                this.Hide();
             }
             else
             {
                 MessageBox.Show("dang nhap that bai");
+                Application.Exit();
             }
             //DoTienLoc
         }
