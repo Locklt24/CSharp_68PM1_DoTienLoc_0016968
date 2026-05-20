@@ -1,6 +1,6 @@
 ﻿namespace WinFormsApp1
 {
-    partial class login
+    partial class frm_login
     {
         /// <summary>
         /// Required designer variable.
@@ -82,15 +82,16 @@
             // 
             // btnlogin
             // 
+            btnlogin.BackColor = SystemColors.ActiveCaption;
             btnlogin.Location = new Point(407, 242);
             btnlogin.Name = "btnlogin";
             btnlogin.Size = new Size(105, 44);
             btnlogin.TabIndex = 5;
             btnlogin.Text = "dang nhap";
-            btnlogin.UseVisualStyleBackColor = true;
+            btnlogin.UseVisualStyleBackColor = false;
             btnlogin.Click += btnlogin_Click;
             // 
-            // Form1
+            // login
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -101,7 +102,7 @@
             Controls.Add(txt_password);
             Controls.Add(txt_username);
             Controls.Add(label1);
-            Name = "Form1";
+            Name = "login";
             Text = "Form1";
             ResumeLayout(false);
             PerformLayout();
