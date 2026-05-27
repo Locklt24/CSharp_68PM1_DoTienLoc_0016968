@@ -58,6 +58,7 @@
             dgv_sinhvien.Name = "dgv_sinhvien";
             dgv_sinhvien.Size = new Size(711, 465);
             dgv_sinhvien.TabIndex = 0;
+            dgv_sinhvien.CellContentClick += dgv_sinhvien_CellContentClick;
             // 
             // btn_them
             // 
@@ -125,6 +126,7 @@
             cbo_lop.Name = "cbo_lop";
             cbo_lop.Size = new Size(263, 23);
             cbo_lop.TabIndex = 4;
+            cbo_lop.SelectedIndexChanged += cbo_lop_SelectedIndexChanged;
             // 
             // cbo_gioitinh
             // 
