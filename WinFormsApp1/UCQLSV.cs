@@ -571,5 +571,10 @@ namespace WinFormsApp1
         private void txt_timkiem_TextChanged(object sender, EventArgs e) { }
 
         private void label7_Click(object sender, EventArgs e) { }
+
+        private void UCQLSV_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

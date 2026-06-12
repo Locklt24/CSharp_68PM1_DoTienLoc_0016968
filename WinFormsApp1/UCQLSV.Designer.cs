@@ -316,6 +316,7 @@
             Controls.Add(dgv_sinhvien);
             Name = "UCQLSV";
             Size = new Size(1243, 679);
+            Load += UCQLSV_Load;
             ((System.ComponentModel.ISupportInitialize)dgv_sinhvien).EndInit();
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
