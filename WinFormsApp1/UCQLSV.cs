@@ -254,12 +254,74 @@ namespace WinFormsApp1
             }
         }
 
-        private void btn_lammoi_Click(object sender, EventArgs e)
+        // --- 6. CHỨC NĂNG XÓA SINH VIÊN ---
+        private void btn_xoa_Click(object sender, EventArgs e)
         {
-            ClearTextBoxes();
-            txt_masv.Focus();
+            // Kiểm tra đã chọn sinh viên chưa
+            if (string.IsNullOrEmpty(currentMaSV))
+            {
+                MessageBox.Show("Vui lòng chọn sinh viên cần xóa từ danh sách!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Xác nhận xóa
+            DialogResult result = MessageBox.Show($"Bạn có chắc chắn muốn xóa sinh viên '{txt_hovaten.Text.Trim()}' (Mã: {currentMaSV})?",
+                                                   "Xác nhận xóa",
+                                                   MessageBoxButtons.YesNo,
+                                                   MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                string connectionString = Database.connectionString;
+                string deleteQuery = "DELETE FROM SinhVien WHERE MaSV = @MaSV";
+
+                try
+                {
+                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    {
+                        connection.Open();
+                        using (SqlCommand command = new SqlCommand(deleteQuery, connection))
+                        {
+                            command.Parameters.AddWithValue("@MaSV", currentMaSV);
+                            int rowsAffected = command.ExecuteNonQuery();
+
+                            if (rowsAffected > 0)
+                            {
+                                MessageBox.Show("Xóa sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                LoadDataToDataGridView(); // Tải lại danh sách
+                                ClearTextBoxes(); // Làm mới form
+                            }
+                            else
+                            {
+                                MessageBox.Show("Không tìm thấy sinh viên để xóa!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi xóa: " + ex.Message, "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
+        // --- 7. CHỨC NĂNG LÀM MỚI (REFRESH) ---
+        private void btn_lammoi_Click(object sender, EventArgs e)
+        {
+            // Xóa trắng các ô nhập
+            ClearTextBoxes();
+
+            // Reload lại dữ liệu từ database
+            LoadDataToDataGridView();
+
+            // Đặt con trỏ vào ô Mã SV
+            txt_masv.Focus();
+
+            // Thông báo (tùy chọn)
+            MessageBox.Show("Đã làm mới dữ liệu!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        // --- 8. SỰ KIỆN CLICK TRÊN DATAGRIDVIEW ---
         private void dgv_sinhvien_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             // Kiểm tra xem có click vào dòng hợp lệ không (không phải header)
@@ -306,21 +368,19 @@ namespace WinFormsApp1
             }
         }
 
-        // --- 8. SỰ KIỆN CELL CONTENT CLICK (XỬ LÝ KHI CLICK VÀO NỘI DUNG CELL) ---
+        // --- 9. SỰ KIỆN CELL CONTENT CLICK (XỬ LÝ KHI CLICK VÀO NỘI DUNG CELL) ---
         private void dgv_sinhvien_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             // Gọi lại CellClick để xử lý tương tự
             dgv_sinhvien_CellClick(sender, e);
         }
 
-        // --- 9. CÁC SỰ KIỆN KHÁC ---
+        // --- 10. CÁC SỰ KIỆN KHÁC ---
         private void btn_timkiem_Click(object sender, EventArgs e)
         {
             string tuKhoa = txt_timkiem.Text;
             MessageBox.Show("Đang tìm kiếm với từ khóa: " + tuKhoa, "Thông báo");
         }
-
-        private void btn_xoa_Click(object sender, EventArgs e) { }
 
         private void cbo_lop_SelectedIndexChanged(object sender, EventArgs e) { }
 
