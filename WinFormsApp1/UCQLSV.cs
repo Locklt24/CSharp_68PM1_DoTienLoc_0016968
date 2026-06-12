@@ -187,14 +187,79 @@ namespace WinFormsApp1
             }
         }
 
-        // --- 5. SỰ KIỆN NÚT LÀM MỚI ---
+        // --- 5. CHỨC NĂNG SỬA SINH VIÊN ---
+        private void btn_sua_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(currentMaSV))
+            {
+                MessageBox.Show("Vui lòng chọn sinh viên cần sửa từ danh sách!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(txt_hovaten.Text))
+            {
+                MessageBox.Show("Vui lòng nhập Họ và tên!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (cbo_lop.SelectedIndex == -1)
+            {
+                MessageBox.Show("Vui lòng chọn Lớp học!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (cbo_gioitinh.SelectedIndex == -1)
+            {
+                MessageBox.Show("Vui lòng chọn Giới tính!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string connectionString = Database.connectionString;
+            string updateQuery = @"UPDATE SinhVien 
+                                   SET HoTen = @HoTen, 
+                                       NgaySinh = @NgaySinh, 
+                                       GioiTinh = @GioiTinh, 
+                                       MaLop = @MaLop
+                                   WHERE MaSV = @MaSV";
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+                    using (SqlCommand command = new SqlCommand(updateQuery, connection))
+                    {
+                        // Thêm tham số cho câu lệnh SQL
+                        command.Parameters.AddWithValue("@MaSV", currentMaSV);
+                        command.Parameters.AddWithValue("@HoTen", txt_hovaten.Text.Trim());
+                        command.Parameters.AddWithValue("@NgaySinh", dtp_ngaysinh.Value);
+                        command.Parameters.AddWithValue("@GioiTinh", cbo_gioitinh.Text);
+                        command.Parameters.AddWithValue("@MaLop", cbo_lop.SelectedValue);
+
+                        int rowsAffected = command.ExecuteNonQuery();
+
+                        if (rowsAffected > 0)
+                        {
+                            MessageBox.Show("Cập nhật sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadDataToDataGridView(); // Tải lại danh sách
+                            ClearTextBoxes(); // Làm mới form
+                        }
+                        else
+                        {
+                            MessageBox.Show("Không tìm thấy sinh viên để cập nhật!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi khi cập nhật: " + ex.Message, "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void btn_lammoi_Click(object sender, EventArgs e)
         {
             ClearTextBoxes();
             txt_masv.Focus();
         }
 
-        // --- 6. SỰ KIỆN CLICK TRÊN DATAGRIDVIEW (ĐỂ LẤY THÔNG TIN LÊN FORM) ---
         private void dgv_sinhvien_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             // Kiểm tra xem có click vào dòng hợp lệ không (không phải header)
@@ -241,14 +306,14 @@ namespace WinFormsApp1
             }
         }
 
-        // --- 7. SỰ KIỆN CELL CONTENT CLICK (XỬ LÝ KHI CLICK VÀO NỘI DUNG CELL) ---
+        // --- 8. SỰ KIỆN CELL CONTENT CLICK (XỬ LÝ KHI CLICK VÀO NỘI DUNG CELL) ---
         private void dgv_sinhvien_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
             // Gọi lại CellClick để xử lý tương tự
             dgv_sinhvien_CellClick(sender, e);
         }
 
-        // --- 8. CÁC SỰ KIỆN KHÁC (TẠM THỜI ĐỂ TRỐNG) ---
+        // --- 9. CÁC SỰ KIỆN KHÁC ---
         private void btn_timkiem_Click(object sender, EventArgs e)
         {
             string tuKhoa = txt_timkiem.Text;
@@ -256,8 +321,6 @@ namespace WinFormsApp1
         }
 
         private void btn_xoa_Click(object sender, EventArgs e) { }
-
-        private void btn_sua_Click(object sender, EventArgs e) { }
 
         private void cbo_lop_SelectedIndexChanged(object sender, EventArgs e) { }
 
@@ -273,9 +336,6 @@ namespace WinFormsApp1
 
         private void label5_Click_1(object sender, EventArgs e) { }
 
-        private void txt_timkiem_TextChanged(object sender, EventArgs e)
-        {
-
-        }
+        private void txt_timkiem_TextChanged(object sender, EventArgs e) { }
     }
 }
