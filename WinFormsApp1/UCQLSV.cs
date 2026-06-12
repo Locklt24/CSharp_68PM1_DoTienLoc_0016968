@@ -14,6 +14,13 @@ namespace WinFormsApp1
         private List<SinhVien> danhSachSV = new List<SinhVien>();
         private string currentMaSV = ""; // Lưu mã SV đang chọn để sửa/xóa
 
+        // ==================== BIẾN PHÂN TRANG ====================
+        private int currentPage = 1;        // Trang hiện tại
+        private int pageSize = 10;           // Số dòng mỗi trang
+        private int totalRecords = 0;        // Tổng số bản ghi
+        private int totalPages = 0;           // Tổng số trang
+        private string currentSearchKeyword = ""; // Lưu từ khóa tìm kiếm
+
         public UCQLSV()
         {
             InitializeComponent();
@@ -26,41 +33,158 @@ namespace WinFormsApp1
             dgv_sinhvien.CellClick += dgv_sinhvien_CellClick;
         }
 
-        // --- 1. HÀM TẢI DỮ LIỆU LÊN DATAGRIDVIEW (Có JOIN để hiển thị tên lớp) ---
+        // --- 1. HÀM TẢI DỮ LIỆU LÊN DATAGRIDVIEW (Có JOIN và PHÂN TRANG) ---
         private void LoadDataToDataGridView()
         {
             string connectionString = Database.connectionString;
-            // JOIN với bảng LopHoc để lấy tên lớp thay vì mã lớp
-            string query = @"SELECT sv.MaSV, sv.HoTen, sv.NgaySinh, sv.GioiTinh, 
-                                    lh.TenLop, sv.MaLop
-                             FROM SinhVien sv
-                             LEFT JOIN LopHoc lh ON sv.MaLop = lh.MaLop";
 
             try
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
-                    DataTable dataTable = new DataTable();
-                    adapter.Fill(dataTable);
-                    dgv_sinhvien.DataSource = dataTable;
+                    connection.Open();
 
-                    // Đặt tiêu đề cột và ẩn cột MaLop
-                    if (dgv_sinhvien.Columns.Count > 0)
+                    // BƯỚC 1: ĐẾM TỔNG SỐ BẢN GHI
+                    string countQuery = "";
+
+                    if (!string.IsNullOrEmpty(currentSearchKeyword))
                     {
-                        dgv_sinhvien.Columns["MaSV"].HeaderText = "Mã SV";
-                        dgv_sinhvien.Columns["HoTen"].HeaderText = "Họ và tên";
-                        dgv_sinhvien.Columns["NgaySinh"].HeaderText = "Ngày sinh";
-                        dgv_sinhvien.Columns["GioiTinh"].HeaderText = "Giới tính";
-                        dgv_sinhvien.Columns["TenLop"].HeaderText = "Tên lớp";
-                        dgv_sinhvien.Columns["MaLop"].Visible = false; // Ẩn cột MaLop
+                        countQuery = @"SELECT COUNT(*) 
+                                       FROM SinhVien sv
+                                       LEFT JOIN LopHoc lh ON sv.MaLop = lh.MaLop
+                                       WHERE sv.MaSV LIKE @tuKhoa 
+                                          OR sv.HoTen LIKE @tuKhoa 
+                                          OR lh.TenLop LIKE @tuKhoa";
                     }
+                    else
+                    {
+                        countQuery = "SELECT COUNT(*) FROM SinhVien";
+                    }
+
+                    using (SqlCommand countCmd = new SqlCommand(countQuery, connection))
+                    {
+                        if (!string.IsNullOrEmpty(currentSearchKeyword))
+                        {
+                            countCmd.Parameters.AddWithValue("@tuKhoa", "%" + currentSearchKeyword + "%");
+                        }
+                        totalRecords = (int)countCmd.ExecuteScalar();
+                    }
+
+                    // BƯỚC 2: TÍNH TỔNG SỐ TRANG
+                    if (totalRecords > 0)
+                    {
+                        totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+                    }
+                    else
+                    {
+                        totalPages = 1;
+                    }
+
+                    // BƯỚC 3: ĐIỀU CHỈNH TRANG HIỆN TẠI
+                    if (currentPage > totalPages)
+                        currentPage = totalPages;
+                    if (currentPage < 1)
+                        currentPage = 1;
+
+                    // BƯỚC 4: TÍNH VỊ TRÍ BẮT ĐẦU VÀ KẾT THÚC
+                    int startRow = (currentPage - 1) * pageSize + 1;
+                    int endRow = Math.Min(currentPage * pageSize, totalRecords);
+
+                    // BƯỚC 5: LẤY DỮ LIỆU CHO TRANG HIỆN TẠI
+                    string dataQuery = "";
+
+                    if (!string.IsNullOrEmpty(currentSearchKeyword))
+                    {
+                        dataQuery = @"SELECT * FROM (
+                                        SELECT ROW_NUMBER() OVER (ORDER BY sv.MaSV) AS RowNum,
+                                               sv.MaSV, sv.HoTen, sv.NgaySinh, sv.GioiTinh, 
+                                               lh.TenLop, sv.MaLop
+                                        FROM SinhVien sv
+                                        LEFT JOIN LopHoc lh ON sv.MaLop = lh.MaLop
+                                        WHERE sv.MaSV LIKE @tuKhoa 
+                                           OR sv.HoTen LIKE @tuKhoa 
+                                           OR lh.TenLop LIKE @tuKhoa
+                                    ) AS PagedData
+                                    WHERE RowNum BETWEEN @StartRow AND @EndRow";
+                    }
+                    else
+                    {
+                        dataQuery = @"SELECT * FROM (
+                                        SELECT ROW_NUMBER() OVER (ORDER BY sv.MaSV) AS RowNum, 
+                                               sv.MaSV, sv.HoTen, sv.NgaySinh, sv.GioiTinh, 
+                                               lh.TenLop, sv.MaLop
+                                        FROM SinhVien sv
+                                        LEFT JOIN LopHoc lh ON sv.MaLop = lh.MaLop
+                                    ) AS PagedData
+                                    WHERE RowNum BETWEEN @StartRow AND @EndRow";
+                    }
+
+                    using (SqlCommand dataCmd = new SqlCommand(dataQuery, connection))
+                    {
+                        if (!string.IsNullOrEmpty(currentSearchKeyword))
+                        {
+                            dataCmd.Parameters.AddWithValue("@tuKhoa", "%" + currentSearchKeyword + "%");
+                        }
+                        dataCmd.Parameters.AddWithValue("@StartRow", startRow);
+                        dataCmd.Parameters.AddWithValue("@EndRow", endRow);
+
+                        SqlDataAdapter adapter = new SqlDataAdapter(dataCmd);
+                        DataTable dataTable = new DataTable();
+                        adapter.Fill(dataTable);
+
+                        dgv_sinhvien.DataSource = dataTable;
+
+                        // Đặt tiêu đề cột và ẩn cột
+                        if (dgv_sinhvien.Columns.Count > 0)
+                        {
+                            if (dgv_sinhvien.Columns.Contains("MaSV"))
+                                dgv_sinhvien.Columns["MaSV"].HeaderText = "Mã SV";
+                            if (dgv_sinhvien.Columns.Contains("HoTen"))
+                                dgv_sinhvien.Columns["HoTen"].HeaderText = "Họ và tên";
+                            if (dgv_sinhvien.Columns.Contains("NgaySinh"))
+                                dgv_sinhvien.Columns["NgaySinh"].HeaderText = "Ngày sinh";
+                            if (dgv_sinhvien.Columns.Contains("GioiTinh"))
+                                dgv_sinhvien.Columns["GioiTinh"].HeaderText = "Giới tính";
+                            if (dgv_sinhvien.Columns.Contains("TenLop"))
+                                dgv_sinhvien.Columns["TenLop"].HeaderText = "Tên lớp";
+                            if (dgv_sinhvien.Columns.Contains("MaLop"))
+                                dgv_sinhvien.Columns["MaLop"].Visible = false;
+                            if (dgv_sinhvien.Columns.Contains("RowNum"))
+                                dgv_sinhvien.Columns["RowNum"].Visible = false;
+                        }
+                    }
+
+                    // BƯỚC 6: CẬP NHẬT GIAO DIỆN PHÂN TRANG
+                    UpdatePaginationUI();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Không thể tải lại bảng dữ liệu: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Không thể tải dữ liệu: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        // --- HÀM CẬP NHẬT GIAO DIỆN PHÂN TRANG ---
+        private void UpdatePaginationUI()
+        {
+            // Cập nhật label thông tin trang (nếu có label)
+            // Bạn có thể thêm label tên là lblPageInfo để hiển thị
+            // lblPageInfo.Text = $"Trang {currentPage} / {totalPages} (Tổng: {totalRecords})";
+
+            // Cập nhật trạng thái các nút phân trang
+            btnFirst.Enabled = (currentPage > 1 && totalRecords > 0);
+            btnPrevious.Enabled = (currentPage > 1 && totalRecords > 0);
+            btnNext.Enabled = (currentPage < totalPages && totalRecords > 0);
+            btnLast.Enabled = (currentPage < totalPages && totalRecords > 0);
+        }
+
+        // --- HÀM LÀM MỚI SAU KHI THÊM/SỬA/XÓA ---
+        private void RefreshAfterDataChange()
+        {
+            currentPage = 1;
+            currentSearchKeyword = "";
+            txt_timkiem.Clear();
+            LoadDataToDataGridView();
         }
 
         // --- 2. HÀM TẢI DỮ LIỆU LỚP HỌC VÀO COMBOBOX ---
@@ -175,7 +299,7 @@ namespace WinFormsApp1
                         if (rowsAffected > 0)
                         {
                             MessageBox.Show("Thêm sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            LoadDataToDataGridView(); // Tải lại bảng dữ liệu
+                            RefreshAfterDataChange(); // Tải lại bảng dữ liệu
                             ClearTextBoxes(); // Làm trống các ô nhập
                         }
                     }
@@ -238,7 +362,7 @@ namespace WinFormsApp1
                         if (rowsAffected > 0)
                         {
                             MessageBox.Show("Cập nhật sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            LoadDataToDataGridView(); // Tải lại danh sách
+                            RefreshAfterDataChange(); // Tải lại danh sách
                             ClearTextBoxes(); // Làm mới form
                         }
                         else
@@ -288,7 +412,7 @@ namespace WinFormsApp1
                             if (rowsAffected > 0)
                             {
                                 MessageBox.Show("Xóa sinh viên thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                LoadDataToDataGridView(); // Tải lại danh sách
+                                RefreshAfterDataChange(); // Tải lại danh sách
                                 ClearTextBoxes(); // Làm mới form
                             }
                             else
@@ -310,6 +434,11 @@ namespace WinFormsApp1
         {
             // Xóa trắng các ô nhập
             ClearTextBoxes();
+
+            // Reset phân trang
+            currentPage = 1;
+            currentSearchKeyword = "";
+            txt_timkiem.Clear();
 
             // Reload lại dữ liệu từ database
             LoadDataToDataGridView();
@@ -375,11 +504,54 @@ namespace WinFormsApp1
             dgv_sinhvien_CellClick(sender, e);
         }
 
-        // --- 10. CÁC SỰ KIỆN KHÁC ---
+        // --- 10. CÁC NÚT PHÂN TRANG ---
+        private void btnFirst_Click(object sender, EventArgs e)
+        {
+            if (currentPage != 1 && totalRecords > 0)
+            {
+                currentPage = 1;
+                LoadDataToDataGridView();
+            }
+        }
+
+        private void btnPrevious_Click(object sender, EventArgs e)
+        {
+            if (currentPage > 1 && totalRecords > 0)
+            {
+                currentPage--;
+                LoadDataToDataGridView();
+            }
+        }
+
+        private void btnNext_Click(object sender, EventArgs e)
+        {
+            if (currentPage < totalPages && totalRecords > 0)
+            {
+                currentPage++;
+                LoadDataToDataGridView();
+            }
+        }
+
+        private void btnLast_Click(object sender, EventArgs e)
+        {
+            if (currentPage != totalPages && totalRecords > 0)
+            {
+                currentPage = totalPages;
+                LoadDataToDataGridView();
+            }
+        }
+
+        // --- 11. CÁC SỰ KIỆN KHÁC ---
         private void btn_timkiem_Click(object sender, EventArgs e)
         {
-            string tuKhoa = txt_timkiem.Text;
-            MessageBox.Show("Đang tìm kiếm với từ khóa: " + tuKhoa, "Thông báo");
+            currentSearchKeyword = txt_timkiem.Text.Trim();
+            currentPage = 1; // Về trang đầu khi tìm kiếm
+            LoadDataToDataGridView();
+
+            if (!string.IsNullOrEmpty(currentSearchKeyword))
+            {
+                MessageBox.Show("Đang tìm kiếm với từ khóa: " + currentSearchKeyword, "Thông báo");
+            }
         }
 
         private void cbo_lop_SelectedIndexChanged(object sender, EventArgs e) { }
@@ -397,5 +569,7 @@ namespace WinFormsApp1
         private void label5_Click_1(object sender, EventArgs e) { }
 
         private void txt_timkiem_TextChanged(object sender, EventArgs e) { }
+
+        private void label7_Click(object sender, EventArgs e) { }
     }
 }

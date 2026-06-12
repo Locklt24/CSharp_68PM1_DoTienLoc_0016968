@@ -47,8 +47,15 @@
             label6 = new Label();
             txt_timkiem = new TextBox();
             btn_timkiem = new Button();
+            btnFirst = new Button();
+            btnPrevious = new Button();
+            btnNext = new Button();
+            btnLast = new Button();
+            lblPageInfo = new Label();
+            numPageSize = new NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)dgv_sinhvien).BeginInit();
             groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numPageSize).BeginInit();
             SuspendLayout();
             // 
             // dgv_sinhvien
@@ -232,10 +239,72 @@
             btn_timkiem.UseVisualStyleBackColor = true;
             btn_timkiem.Click += btn_timkiem_Click;
             // 
+            // btnFirst
+            // 
+            btnFirst.Location = new Point(545, 584);
+            btnFirst.Name = "btnFirst";
+            btnFirst.Size = new Size(75, 23);
+            btnFirst.TabIndex = 6;
+            btnFirst.Text = "<<";
+            btnFirst.UseVisualStyleBackColor = true;
+            btnFirst.Click += btnFirst_Click;
+            // 
+            // btnPrevious
+            // 
+            btnPrevious.Location = new Point(649, 584);
+            btnPrevious.Name = "btnPrevious";
+            btnPrevious.Size = new Size(75, 23);
+            btnPrevious.TabIndex = 6;
+            btnPrevious.Text = "<";
+            btnPrevious.UseVisualStyleBackColor = true;
+            // 
+            // btnNext
+            // 
+            btnNext.Location = new Point(876, 584);
+            btnNext.Name = "btnNext";
+            btnNext.Size = new Size(75, 23);
+            btnNext.TabIndex = 6;
+            btnNext.Text = ">";
+            btnNext.UseVisualStyleBackColor = true;
+            btnNext.Click += btnNext_Click;
+            // 
+            // btnLast
+            // 
+            btnLast.Location = new Point(957, 584);
+            btnLast.Name = "btnLast";
+            btnLast.Size = new Size(75, 23);
+            btnLast.TabIndex = 6;
+            btnLast.Text = ">>";
+            btnLast.UseVisualStyleBackColor = true;
+            btnLast.Click += btnLast_Click;
+            // 
+            // lblPageInfo
+            // 
+            lblPageInfo.AutoSize = true;
+            lblPageInfo.Location = new Point(759, 552);
+            lblPageInfo.Name = "lblPageInfo";
+            lblPageInfo.Size = new Size(19, 15);
+            lblPageInfo.TabIndex = 7;
+            lblPageInfo.Text = "00";
+            lblPageInfo.Click += label7_Click;
+            // 
+            // numPageSize
+            // 
+            numPageSize.Location = new Point(737, 586);
+            numPageSize.Name = "numPageSize";
+            numPageSize.Size = new Size(120, 23);
+            numPageSize.TabIndex = 8;
+            // 
             // UCQLSV
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(numPageSize);
+            Controls.Add(lblPageInfo);
+            Controls.Add(btnLast);
+            Controls.Add(btnNext);
+            Controls.Add(btnPrevious);
+            Controls.Add(btnFirst);
             Controls.Add(btn_timkiem);
             Controls.Add(txt_timkiem);
             Controls.Add(label6);
@@ -250,6 +319,7 @@
             ((System.ComponentModel.ISupportInitialize)dgv_sinhvien).EndInit();
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numPageSize).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -275,5 +345,11 @@
         private Label label6;
         private TextBox txt_timkiem;
         private Button btn_timkiem;
+        private Button btnFirst;
+        private Button btnPrevious;
+        private Button btnNext;
+        private Button btnLast;
+        private Label lblPageInfo;
+        private NumericUpDown numPageSize;
     }
 }
