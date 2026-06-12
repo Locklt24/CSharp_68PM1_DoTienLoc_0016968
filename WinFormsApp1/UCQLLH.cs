@@ -571,9 +571,42 @@ namespace WinFormsApp1
             dgvLopHoc_CellClick(sender, e);
         }
 
+        // ==================== XEM DANH SÁCH SINH VIÊN (BẢN ĐƠN GIẢN) ====================
         private void btnXemSinhVien_Click(object sender, EventArgs e)
         {
+            // Kiểm tra đã chọn lớp chưa
+            if (currentID == -1 || string.IsNullOrEmpty(currentMaLop))
+            {
+                MessageBox.Show("Vui lòng chọn lớp để xem danh sách sinh viên!",
+                               "Thông báo",
+                               MessageBoxButtons.OK,
+                               MessageBoxIcon.Warning);
+                return;
+            }
 
+            try
+            {
+                // Tạo form mới
+                Form frmContainer = new Form();
+                frmContainer.Text = $"Danh sách sinh viên lớp {txtTenLop.Text}";
+                frmContainer.Size = new System.Drawing.Size(950, 600);
+                frmContainer.StartPosition = FormStartPosition.CenterParent;
+
+                // Tạo User Control
+                UCXemSinhVienTheoLop ucXemSV = new UCXemSinhVienTheoLop();
+                ucXemSV.Dock = DockStyle.Fill;
+                ucXemSV.SetLopInfo(currentMaLop, txtTenLop.Text);
+
+                // Thêm vào form
+                frmContainer.Controls.Add(ucXemSV);
+
+                // Hiển thị
+                frmContainer.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
