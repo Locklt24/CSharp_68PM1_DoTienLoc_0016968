@@ -12,6 +12,7 @@ namespace WinFormsApp1
     public partial class UCQLSV : UserControl
     {
         private List<SinhVien> danhSachSV = new List<SinhVien>();
+        private string currentMaSV = ""; // Lưu mã SV đang chọn để sửa/xóa
 
         public UCQLSV()
         {
@@ -20,13 +21,20 @@ namespace WinFormsApp1
             // CHẠY TỰ ĐỘNG: Vừa mở giao diện lên là nạp dữ liệu ngay lập tức
             LoadDataToComboBoxLop();
             LoadDataToDataGridView();
+
+            // Gán sự kiện CellClick cho DataGridView
+            dgv_sinhvien.CellClick += dgv_sinhvien_CellClick;
         }
 
-        // --- 1. HÀM TẢI DỮ LIỆU LÊN DATAGRIDVIEW ---
+        // --- 1. HÀM TẢI DỮ LIỆU LÊN DATAGRIDVIEW (Có JOIN để hiển thị tên lớp) ---
         private void LoadDataToDataGridView()
         {
             string connectionString = Database.connectionString;
-            string query = "SELECT * FROM SinhVien";
+            // JOIN với bảng LopHoc để lấy tên lớp thay vì mã lớp
+            string query = @"SELECT sv.MaSV, sv.HoTen, sv.NgaySinh, sv.GioiTinh, 
+                                    lh.TenLop, sv.MaLop
+                             FROM SinhVien sv
+                             LEFT JOIN LopHoc lh ON sv.MaLop = lh.MaLop";
 
             try
             {
@@ -36,6 +44,17 @@ namespace WinFormsApp1
                     DataTable dataTable = new DataTable();
                     adapter.Fill(dataTable);
                     dgv_sinhvien.DataSource = dataTable;
+
+                    // Đặt tiêu đề cột và ẩn cột MaLop
+                    if (dgv_sinhvien.Columns.Count > 0)
+                    {
+                        dgv_sinhvien.Columns["MaSV"].HeaderText = "Mã SV";
+                        dgv_sinhvien.Columns["HoTen"].HeaderText = "Họ và tên";
+                        dgv_sinhvien.Columns["NgaySinh"].HeaderText = "Ngày sinh";
+                        dgv_sinhvien.Columns["GioiTinh"].HeaderText = "Giới tính";
+                        dgv_sinhvien.Columns["TenLop"].HeaderText = "Tên lớp";
+                        dgv_sinhvien.Columns["MaLop"].Visible = false; // Ẩn cột MaLop
+                    }
                 }
             }
             catch (Exception ex)
@@ -44,7 +63,7 @@ namespace WinFormsApp1
             }
         }
 
-        // --- 2. HÀM TẢI DỮ LIỆU LỚP HỌC VÀO COMBOBOX (Đã sửa đổi vị trí) ---
+        // --- 2. HÀM TẢI DỮ LIỆU LỚP HỌC VÀO COMBOBOX ---
         private void LoadDataToComboBoxLop()
         {
             string connectionString = Database.connectionString;
@@ -85,9 +104,12 @@ namespace WinFormsApp1
             txt_hovaten.Clear();
             dtp_ngaysinh.Value = DateTime.Now;
 
-            // Đưa ComboBox về trạng thái chưa chọn mục nào thay vì ép chọn mục 0
+            // Đưa ComboBox về trạng thái chưa chọn mục nào
             cbo_gioitinh.SelectedIndex = -1;
             cbo_lop.SelectedIndex = -1;
+
+            currentMaSV = ""; // Xóa mã SV đang lưu
+            txt_masv.Enabled = true; // Cho phép nhập mã mới (khi thêm)
         }
 
         // --- 4. SỰ KIỆN NÚT THÊM SINH VIÊN ---
@@ -110,6 +132,13 @@ namespace WinFormsApp1
                 if (cbo_lop.SelectedIndex == -1)
                 {
                     MessageBox.Show("Vui lòng chọn Lớp học cho sinh viên!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Kiểm tra chọn giới tính
+                if (cbo_gioitinh.SelectedIndex == -1)
+                {
+                    MessageBox.Show("Vui lòng chọn Giới tính!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -165,7 +194,61 @@ namespace WinFormsApp1
             txt_masv.Focus();
         }
 
-        // --- 6. CÁC SỰ KIỆN HỆ THỐNG KHÁC (GIỮ NGUYÊN) ---
+        // --- 6. SỰ KIỆN CLICK TRÊN DATAGRIDVIEW (ĐỂ LẤY THÔNG TIN LÊN FORM) ---
+        private void dgv_sinhvien_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            // Kiểm tra xem có click vào dòng hợp lệ không (không phải header)
+            if (e.RowIndex >= 0)
+            {
+                // Lấy dòng được chọn
+                DataGridViewRow row = dgv_sinhvien.Rows[e.RowIndex];
+
+                // Lấy dữ liệu từ các cột
+                currentMaSV = row.Cells["MaSV"].Value.ToString();
+                txt_masv.Text = currentMaSV;
+                txt_hovaten.Text = row.Cells["HoTen"].Value.ToString();
+
+                // Xử lý ngày sinh
+                if (row.Cells["NgaySinh"].Value != DBNull.Value)
+                {
+                    dtp_ngaysinh.Value = Convert.ToDateTime(row.Cells["NgaySinh"].Value);
+                }
+
+                // Xử lý giới tính
+                if (row.Cells["GioiTinh"].Value != DBNull.Value)
+                {
+                    string gioiTinh = row.Cells["GioiTinh"].Value.ToString();
+                    // Tìm và chọn giới tính trong ComboBox
+                    if (cbo_gioitinh.Items.Contains(gioiTinh))
+                    {
+                        cbo_gioitinh.SelectedItem = gioiTinh;
+                    }
+                }
+
+                // Xử lý lớp (dùng MaLop - cột ẩn)
+                if (row.Cells["MaLop"].Value != DBNull.Value)
+                {
+                    string maLop = row.Cells["MaLop"].Value.ToString();
+                    cbo_lop.SelectedValue = maLop;
+                }
+                else
+                {
+                    cbo_lop.SelectedIndex = -1;
+                }
+
+                // Khóa ô mã sinh viên khi sửa (không cho phép thay đổi mã)
+                txt_masv.Enabled = false;
+            }
+        }
+
+        // --- 7. SỰ KIỆN CELL CONTENT CLICK (XỬ LÝ KHI CLICK VÀO NỘI DUNG CELL) ---
+        private void dgv_sinhvien_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            // Gọi lại CellClick để xử lý tương tự
+            dgv_sinhvien_CellClick(sender, e);
+        }
+
+        // --- 8. CÁC SỰ KIỆN KHÁC (TẠM THỜI ĐỂ TRỐNG) ---
         private void btn_timkiem_Click(object sender, EventArgs e)
         {
             string tuKhoa = txt_timkiem.Text;
@@ -173,14 +256,26 @@ namespace WinFormsApp1
         }
 
         private void btn_xoa_Click(object sender, EventArgs e) { }
+
         private void btn_sua_Click(object sender, EventArgs e) { }
-        private void dgv_sinhvien_CellContentClick(object sender, DataGridViewCellEventArgs e) { }
+
         private void cbo_lop_SelectedIndexChanged(object sender, EventArgs e) { }
+
         private void textBox1_TextChanged(object sender, EventArgs e) { }
+
         private void textBox3_TextChanged(object sender, EventArgs e) { }
+
         private void label2_Click(object sender, EventArgs e) { }
+
         private void label4_Click(object sender, EventArgs e) { }
+
         private void label5_Click(object sender, EventArgs e) { }
+
         private void label5_Click_1(object sender, EventArgs e) { }
+
+        private void txt_timkiem_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }

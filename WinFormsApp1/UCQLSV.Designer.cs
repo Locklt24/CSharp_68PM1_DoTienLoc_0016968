@@ -220,6 +220,7 @@
             txt_timkiem.Name = "txt_timkiem";
             txt_timkiem.Size = new Size(426, 23);
             txt_timkiem.TabIndex = 4;
+            txt_timkiem.TextChanged += txt_timkiem_TextChanged;
             // 
             // btn_timkiem
             // 
